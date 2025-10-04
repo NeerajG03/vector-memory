@@ -1,0 +1,39 @@
+[project]
+name = "mcp-server-vector-memory"
+version = "0.1.0"
+description = "MCP server for semantic document memory with Redis vector store"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    {name = "NeerajG03", email = "neeraj@example.com"}
+]
+license = {text = "MIT"}
+keywords = ["mcp", "vector-memory", "redis", "embeddings", "semantic-search"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "httpx>=0.28.1",
+    "langchain-community>=0.3.30",
+    "langchain-huggingface>=0.3.1",
+    "langchain-redis>=0.2.4",
+    "mcp[cli]>=1.16.0",
+    "pypdf>=6.1.1",
+    "scikit-learn>=1.7.2",
+    "sentence-transformers>=5.1.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/NeerajG03/vector-memory"
+Repository = "https://github.com/NeerajG03/vector-memory"
+Issues = "https://github.com/NeerajG03/vector-memory/issues"
+
+[project.scripts]
+vector-memory = "vector_memory:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
