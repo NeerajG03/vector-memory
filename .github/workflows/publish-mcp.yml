@@ -67,13 +67,14 @@ jobs:
 
       - name: Install MCP Publisher
         run: |
-          # Get the latest release URL
-          LATEST_RELEASE=$(curl -s https://api.github.com/repos/modelcontextprotocol/registry/releases/latest | grep "tag_name" | cut -d '"' -f 4)
+          # Get the latest release tag and version
+          LATEST_TAG=$(curl -s https://api.github.com/repos/modelcontextprotocol/registry/releases/latest | grep "tag_name" | cut -d '"' -f 4)
+          VERSION=${LATEST_TAG#v}  # Remove 'v' prefix
           OS=$(uname -s | tr '[:upper:]' '[:lower:]')
           ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
           
-          # Download and extract
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/download/${LATEST_RELEASE}/mcp-publisher_${OS}_${ARCH}.tar.gz" | tar xz
+          # Download and extract (filename uses version without 'v')
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/download/${LATEST_TAG}/mcp-publisher_${VERSION}_${OS}_${ARCH}.tar.gz" | tar xz
           chmod +x mcp-publisher
 
       - name: Login to MCP Registry
