@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
   "name": "io.github.neerajg03/vector-memory",
-  "description": "MCP server for semantic document memory with Redis vector store. Save and recall file contents using natural language queries.",
+  "description": "Semantic document memory using Redis vector store. Save and recall files with natural language.",
   "version": "0.1.0",
   "homepage": "https://github.com/NeerajG03/vector-memory",
   "license": "MIT",
