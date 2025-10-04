@@ -32,7 +32,7 @@ Repository = "https://github.com/NeerajG03/vector-memory"
 Issues = "https://github.com/NeerajG03/vector-memory/issues"
 
 [project.scripts]
-vector-memory = "vector_memory:main"
+mcp-server-vector-memory = "vector_memory:main"
 
 [build-system]
 requires = ["hatchling"]
