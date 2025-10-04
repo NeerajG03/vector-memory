@@ -12,13 +12,13 @@ This document provides AI agents with comprehensive information about the codeba
 - [Development Guidelines](#development-guidelines)
 - [Testing Strategy](#testing-strategy)
 - [Publishing Workflow](#publishing-workflow)
-- [Common Tasks](#common-tasks)
 
 ## Project Overview
 
 **Purpose**: MCP server that provides semantic memory capabilities for AI assistants using Redis vector store and HuggingFace embeddings.
 
 **Key Features**:
+
 - Save files (PDF, TXT, MD) to vector memory
 - Recall information using natural language queries
 - Automatic duplicate removal when re-saving files
@@ -26,6 +26,7 @@ This document provides AI agents with comprehensive information about the codeba
 - Memory management tools
 
 **Tech Stack**:
+
 - **Language**: Python 3.12+
 - **Framework**: FastMCP (MCP server framework)
 - **Vector Store**: Redis with RedisVectorStore
@@ -51,17 +52,18 @@ FastMCP Server (vector_memory.py)
 ### Data Flow
 
 1. **Save to Memory**:
+
    ```
-   File Path → Check Existence → Determine File Type → 
-   Get Optimal Chunk Size → Load Document → 
-   Remove Old Versions → Chunk Content → 
+   File Path → Check Existence → Determine File Type →
+   Get Optimal Chunk Size → Load Document →
+   Remove Old Versions → Chunk Content →
    Generate Embeddings → Store in Redis
    ```
 
 2. **Recall from Memory**:
    ```
-   Query → Generate Query Embedding → 
-   Similarity Search in Redis → 
+   Query → Generate Query Embedding →
+   Similarity Search in Redis →
    Retrieve Top K Results → Format Output
    ```
 
@@ -92,6 +94,7 @@ vector-memory/
 **Main Server File** - Exposes MCP tools and handles core functionality.
 
 #### Constants
+
 ```python
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 INDEX_NAME = "mcp_vector_memory"  # Namespace for all keys
@@ -101,6 +104,7 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 #### Helper Functions
 
 **`_get_optimal_chunk_size(file_extension: str) -> tuple[int, int]`**
+
 - Returns (chunk_size, chunk_overlap) based on file type
 - PDF: (1500, 200) - larger chunks for structured content
 - Markdown: (1200, 150) - preserve structure
@@ -108,6 +112,7 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 - **Design Decision**: Automatic optimization removes user burden
 
 **`_remove_existing_documents(file_paths: list[str]) -> None`**
+
 - Removes old versions of files before saving new ones
 - Searches Redis for keys matching source_file metadata
 - Handles both metadata storage formats (direct field and JSON)
@@ -116,6 +121,7 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 #### MCP Tools
 
 **`save_to_memory(file_paths: list[str]) -> str`**
+
 - **Purpose**: Save files to vector memory
 - **Process**:
   1. Remove existing documents for these paths
@@ -129,6 +135,7 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 - **Returns**: Success message with file count
 
 **`recall_from_memory(what_to_remember: str, how_many_results: int = 3) -> str`**
+
 - **Purpose**: Retrieve relevant information from memory
 - **Process**:
   1. Perform similarity search on query
@@ -137,6 +144,7 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 - **Returns**: Formatted results with source attribution
 
 **`list_memory_contents() -> str`**
+
 - **Purpose**: Show what's currently in memory
 - **Process**:
   1. Get all keys from Redis
@@ -151,22 +159,27 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 #### Key Functions
 
 **`list_all_files()`**
+
 - Lists all documents grouped by source file
 - Shows chunk count per file
 
 **`search_files(search_term: str)`**
+
 - Searches for files matching a term
 - Case-insensitive partial matching
 
 **`delete_by_file(file_path: str)`**
+
 - Deletes all chunks from a specific file
 - Requires confirmation
 
 **`delete_all()`**
+
 - Deletes all documents from memory
 - Requires explicit "yes" confirmation
 
 **`interactive_mode()`**
+
 - Menu-driven interface
 - Options: list, search, delete, exit
 
@@ -177,15 +190,18 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 #### Commands
 
 **`cleanup_all()`**
+
 - Deletes all documents
 - Drops the Redis index
 - Requires confirmation
 
 **`cleanup_by_file(file_path: str)`**
+
 - Deletes documents from specific file
 - Shows tip if not found
 
 **`show_stats()`**
+
 - Shows total chunks and unique files
 - Lists all files with chunk counts
 
@@ -194,6 +210,7 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 ### 1. Data Isolation
 
 **Decision**: Use multiple layers of isolation
+
 - **Database number**: Configurable via REDIS_URL (default: DB 0)
 - **Index namespace**: All keys prefixed with `mcp_vector_memory:*`
 - **Metadata tagging**: Each chunk has source_file metadata
@@ -204,7 +221,8 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 **Decision**: System determines chunk size based on file type, not user parameter.
 
-**Rationale**: 
+**Rationale**:
+
 - Reduces cognitive load on users
 - Optimizes for different content types
 - Can be adjusted centrally if needed
@@ -212,6 +230,7 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 ### 3. Memory-Friendly Parameter Names
 
 **Decision**: Use natural language parameter names
+
 - `what_to_remember` instead of `query`
 - `how_many_results` instead of `k`
 - `file_paths` instead of `paths`
@@ -222,7 +241,8 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 **Decision**: Automatically remove old versions when re-saving files.
 
-**Rationale**: 
+**Rationale**:
+
 - Prevents memory bloat
 - Ensures latest content is always used
 - Transparent to user
@@ -231,7 +251,8 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 **Decision**: Convert all paths to absolute before storage.
 
-**Rationale**: 
+**Rationale**:
+
 - Consistent identification across sessions
 - Reliable duplicate detection
 - Clear source attribution
@@ -240,7 +261,8 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 **Decision**: Suppress warnings and library logs to stderr.
 
-**Rationale**: 
+**Rationale**:
+
 - MCP protocol requires clean stdout (JSON only)
 - Prevents parsing errors in clients
 - Improves user experience
@@ -252,60 +274,21 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 1. **Type Hints**: Use type hints for all function parameters and returns
 2. **Docstrings**: Google-style docstrings for all public functions
 3. **Formatting**: Follow Black/Ruff formatting (double quotes, 4-space indent)
-4. **Naming**: 
+4. **Naming**:
    - Private functions: `_function_name`
    - Public functions: `function_name`
    - Constants: `UPPER_CASE`
 
-### Adding New Tools
-
-To add a new MCP tool:
-
-```python
-@mcp.tool()
-async def tool_name(param: type) -> str:
-    """
-    Brief description.
-    
-    Detailed description of what the tool does.
-    
-    Args:
-        param: Description of parameter
-        
-    Returns:
-        Description of return value
-    """
-    # Implementation
-    return result
-```
-
-### Adding New File Types
-
-To support a new file type:
-
-1. Update `_get_optimal_chunk_size()`:
-   ```python
-   elif file_extension == ".docx":
-       return (1300, 150)
-   ```
-
-2. Add loader in `save_to_memory()`:
-   ```python
-   elif ext == ".docx":
-       from langchain_community.document_loaders import Docx2txtLoader
-       loader = Docx2txtLoader(abs_path)
-   ```
-
-3. Update documentation in README.md and USAGE.md
-
 ### Environment Variables
 
 **Supported**:
+
 - `REDIS_URL`: Redis connection string (default: `redis://localhost:6379/0`)
 - `TF_CPP_MIN_LOG_LEVEL`: TensorFlow logging (set to '3')
 - `TRANSFORMERS_VERBOSITY`: Transformers logging (set to 'error')
 
 **To Add New**:
+
 ```python
 NEW_VAR = os.environ.get("NEW_VAR", "default_value")
 ```
@@ -315,16 +298,19 @@ NEW_VAR = os.environ.get("NEW_VAR", "default_value")
 ### Manual Testing
 
 1. **Connection Test**:
+
    ```bash
    uv run test_connection.py
    ```
 
 2. **Schema Validation**:
+
    ```bash
    python3 validate_server_json.py
    ```
 
 3. **Build Test**:
+
    ```bash
    uv build
    ```
@@ -337,6 +323,7 @@ NEW_VAR = os.environ.get("NEW_VAR", "default_value")
 ### Integration Testing
 
 Test with actual MCP client:
+
 ```bash
 # Start server
 uv run vector_memory.py
@@ -347,17 +334,20 @@ uv run vector_memory.py
 ### Test Scenarios
 
 1. **Save and Recall**:
+
    - Save a file
    - Recall information from it
    - Verify correct content returned
 
 2. **Duplicate Handling**:
+
    - Save a file
    - Modify the file
    - Save again
    - Verify only one version exists
 
 3. **Multi-Format**:
+
    - Save PDF, TXT, and MD files
    - Verify all are searchable
    - Check chunk sizes are optimized
@@ -385,6 +375,7 @@ uv run vector_memory.py
 ### Version Numbering
 
 Follow Semantic Versioning (SemVer):
+
 - **Major** (1.0.0): Breaking changes
 - **Minor** (0.1.0): New features, backward compatible
 - **Patch** (0.0.1): Bug fixes
@@ -396,61 +387,6 @@ Follow Semantic Versioning (SemVer):
 - [ ] Version bumped in pyproject.toml and server.json
 - [ ] CHANGELOG updated (if exists)
 - [ ] No uncommitted changes
-
-## Common Tasks
-
-### Task: Add a New MCP Tool
-
-1. Define function in `vector_memory.py`:
-   ```python
-   @mcp.tool()
-   async def new_tool(param: str) -> str:
-       """Tool description."""
-       # Implementation
-       return result
-   ```
-
-2. Update README.md features list
-3. Add usage examples to USAGE.md
-4. Test the tool
-5. Commit and publish
-
-### Task: Change Chunk Size Strategy
-
-1. Modify `_get_optimal_chunk_size()` in `vector_memory.py`
-2. Test with various file types
-3. Update documentation if behavior changes
-4. Commit with clear description
-
-### Task: Add Environment Variable
-
-1. Add to constants section:
-   ```python
-   NEW_CONFIG = os.environ.get("NEW_CONFIG", "default")
-   ```
-
-2. Update README.md Configuration section
-3. Update USAGE.md Configuration section
-4. Update management scripts if needed
-
-### Task: Fix a Bug
-
-1. **Reproduce** the bug
-2. **Identify** root cause
-3. **Write test** that fails (if possible)
-4. **Fix** the issue
-5. **Verify** test passes
-6. **Document** in commit message
-7. **Publish** patch version
-
-### Task: Improve Performance
-
-1. **Profile** to identify bottleneck
-2. **Optimize** the specific area
-3. **Benchmark** before/after
-4. **Ensure** no functionality broken
-5. **Document** improvement
-6. **Publish** minor version
 
 ## Key Constraints
 
@@ -482,6 +418,7 @@ Follow Semantic Versioning (SemVer):
 
 **Cause**: Library logging to stdout
 **Solution**: Ensure logging suppression is active in vector_memory.py:
+
 ```python
 warnings.filterwarnings('ignore')
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -493,19 +430,6 @@ os.environ['TRANSFORMERS_VERBOSITY'] = 'error'
 **Cause**: No tag pushed
 **Solution**: Workflow only runs on tag push (`v*`), not regular commits
 
-## Future Enhancement Ideas
-
-- [ ] Support for more file types (DOCX, HTML, etc.)
-- [ ] Configurable embedding models
-- [ ] Batch operations for multiple files
-- [ ] Export/import memory snapshots
-- [ ] Memory analytics and insights
-- [ ] Automatic memory cleanup (LRU, size limits)
-- [ ] Multi-language support
-- [ ] Custom metadata fields
-- [ ] Memory versioning/history
-- [ ] Integration with other vector stores
-
 ## Resources
 
 - **MCP Documentation**: https://modelcontextprotocol.io/
@@ -514,15 +438,4 @@ os.environ['TRANSFORMERS_VERBOSITY'] = 'error'
 - **Sentence Transformers**: https://www.sbert.net/
 - **Redis**: https://redis.io/docs/
 
-## Contact & Support
-
-- **Repository**: https://github.com/NeerajG03/vector-memory
-- **Issues**: https://github.com/NeerajG03/vector-memory/issues
-- **PyPI**: https://pypi.org/project/mcp-server-vector-memory/
-- **MCP Registry**: https://mcp.run/server/io.github.NeerajG03/vector-memory
-
 ---
-
-**Last Updated**: 2025-10-04
-**Version**: 0.2.0
-**Maintainer**: NeerajG03
