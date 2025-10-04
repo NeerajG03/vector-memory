@@ -33,6 +33,8 @@ Issues = "https://github.com/NeerajG03/vector-memory/issues"
 
 [project.scripts]
 mcp-server-vector-memory = "vector_memory:main"
+vector-memory-manage = "manage_memory:main"
+vector-memory-cleanup = "cleanup:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -43,13 +45,18 @@ packages = ["."]
 only-include = [
     "vector_memory.py",
     "main.py",
+    "manage_memory.py",
+    "cleanup.py",
 ]
 
 [tool.hatch.build.targets.sdist]
 include = [
     "vector_memory.py",
     "main.py",
+    "manage_memory.py",
+    "cleanup.py",
     "README.md",
+    "USAGE.md",
     "LICENSE",
     "pyproject.toml",
 ]

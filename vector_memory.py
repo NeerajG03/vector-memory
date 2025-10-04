@@ -18,8 +18,8 @@ os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 mcp = FastMCP("vector-memory")
 
 # Constants
-REDIS_URL = "redis://localhost:6379"
-INDEX_NAME = "doc_chunks"
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")  # DB 0 by default
+INDEX_NAME = "mcp_vector_memory"  # Unique namespace
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 # Initialize embeddings and vector store
@@ -30,61 +30,89 @@ vector_store = RedisVectorStore(
 )
 
 
-@mcp.tool()
-async def save_to_memory(
-    file_paths: list[str], chunk_size: int = 1000, chunk_overlap: int = 100
-) -> str:
+def _get_optimal_chunk_size(file_extension: str) -> tuple[int, int]:
     """
-    Save files and their contents to memory for later retrieval.
-
-    Use this tool to load documents into memory so their content can be recalled later.
-    Supports text files (.txt, .md) and PDF documents. The content is automatically
-    organized to make future searches more effective.
+    Determine optimal chunk size and overlap based on file type.
 
     Args:
-        file_paths: List of file paths to save to memory
+        file_extension: File extension (e.g., '.pdf', '.txt', '.md')
 
     Returns:
-        Confirmation message
+        Tuple of (chunk_size, chunk_overlap)
+    """
+    # PDFs often have more structured content, use larger chunks
+    if file_extension == ".pdf":
+        return (1500, 200)
+    # Markdown files benefit from preserving structure
+    elif file_extension == ".md":
+        return (1200, 150)
+    # Text files - standard chunking
+    else:
+        return (1000, 100)
+
+
+def _remove_existing_documents(file_paths: list[str]) -> None:
+    """
+    Remove existing documents from Redis for the given file paths.
+
+    This prevents duplicate content when re-saving the same file.
+
+    Args:
+        file_paths: List of file paths to remove from memory
     """
     import redis
     import json
-    
-    docs = []
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=chunk_size, chunk_overlap=chunk_overlap
-    )
-    
-    # First, remove any existing documents from these file paths to avoid duplicates
+
     redis_client = redis.Redis.from_url(REDIS_URL)
+
     for file_path in file_paths:
         abs_path = os.path.abspath(file_path)
-        
+
         try:
             pattern = f"{INDEX_NAME}:*"
             keys = redis_client.keys(pattern)
             keys_to_delete = []
-            
+
             for key in keys:
                 doc_data = redis_client.hgetall(key)
                 # Check both possible metadata storage formats
-                if b'source_file' in doc_data:
-                    stored_path = doc_data[b'source_file'].decode('utf-8')
+                if b"source_file" in doc_data:
+                    stored_path = doc_data[b"source_file"].decode("utf-8")
                     if stored_path == abs_path:
                         keys_to_delete.append(key)
-                elif b'_metadata_json' in doc_data:
-                    metadata_str = doc_data[b'_metadata_json'].decode('utf-8')
+                elif b"_metadata_json" in doc_data:
+                    metadata_str = doc_data[b"_metadata_json"].decode("utf-8")
                     metadata = json.loads(metadata_str)
-                    if metadata.get('source_file') == abs_path:
+                    if metadata.get("source_file") == abs_path:
                         keys_to_delete.append(key)
-            
+
             if keys_to_delete:
                 redis_client.delete(*keys_to_delete)
         except Exception:
             # Continue even if deletion fails
             pass
 
-    # Now process and add the new documents
+
+@mcp.tool()
+async def save_to_memory(file_paths: list[str]) -> str:
+    """
+    Remember the contents of files for later recall.
+
+    Use this to store documents in memory so you can recall their content later.
+    Supports text files (.txt, .md) and PDF documents. The system automatically
+    organizes content for optimal recall.
+
+    Args:
+        file_paths: Paths to files you want to remember
+
+    Returns:
+        Confirmation message
+    """
+    # Remove any existing documents from these file paths to avoid duplicates
+    _remove_existing_documents(file_paths)
+
+    docs = []
+
     for file_path in file_paths:
         # Convert to absolute path
         abs_path = os.path.abspath(file_path)
@@ -95,6 +123,12 @@ async def save_to_memory(
 
         ext = os.path.splitext(abs_path)[1].lower()
 
+        # Get optimal chunk size for this file type
+        chunk_size, chunk_overlap = _get_optimal_chunk_size(ext)
+        splitter = RecursiveCharacterTextSplitter(
+            chunk_size=chunk_size, chunk_overlap=chunk_overlap
+        )
+
         # Load document depending on type
         try:
             if ext == ".pdf":
@@ -104,7 +138,7 @@ async def save_to_memory(
 
             file_docs = loader.load()
 
-            # Chunking
+            # Chunking with optimal settings
             chunks = splitter.split_documents(file_docs)
 
             # Add metadata (store absolute path)
@@ -124,26 +158,26 @@ async def save_to_memory(
 
 
 @mcp.tool()
-async def recall_from_memory(query: str, k: int = 3) -> str:
+async def recall_from_memory(what_to_remember: str, how_many_results: int = 3) -> str:
     """
-    Recall information from memory based on what you're looking for.
+    Recall information from memory.
 
-    Use this tool to retrieve relevant information that was previously saved.
-    The memory will find and return the most relevant content related to your query,
-    even if the exact words don't match.
+    Use this to retrieve relevant information that was previously saved.
+    The memory will find and return the most relevant content, even if the
+    exact words don't match.
 
     Args:
-        query: What you want to recall or search for
-        k: How many relevant pieces of information to return (default: 3)
+        what_to_remember: What you're trying to recall or remember
+        how_many_results: How many relevant memories to return (default: 3)
 
     Returns:
         The most relevant information found in memory
     """
     try:
-        results = vector_store.similarity_search(query, k=k)
+        results = vector_store.similarity_search(what_to_remember, k=how_many_results)
 
         if not results:
-            return "Nothing found in memory matching your query."
+            return "Nothing found in memory matching what you're looking for."
 
         output = []
         for i, doc in enumerate(results, 1):
@@ -156,6 +190,53 @@ async def recall_from_memory(query: str, k: int = 3) -> str:
         return "\n---\n".join(output)
     except Exception as e:
         return f"Error recalling from memory: {str(e)}"
+
+
+@mcp.tool()
+async def list_memory_contents() -> str:
+    """
+    List all files currently stored in memory.
+
+    Use this to see what documents are available for recall.
+
+    Returns:
+        Summary of all files in memory with chunk counts
+    """
+    import redis
+    import json
+    from collections import defaultdict
+
+    try:
+        redis_client = redis.Redis.from_url(REDIS_URL)
+        pattern = f"{INDEX_NAME}:*"
+        keys = redis_client.keys(pattern)
+
+        if not keys:
+            return "📭 Memory is empty - no documents stored yet."
+
+        # Group by source file
+        files_map = defaultdict(int)
+
+        for key in keys:
+            doc_data = redis_client.hgetall(key)
+            if b"source_file" in doc_data:
+                source_file = doc_data[b"source_file"].decode("utf-8")
+                files_map[source_file] += 1
+            elif b"_metadata_json" in doc_data:
+                metadata_str = doc_data[b"_metadata_json"].decode("utf-8")
+                metadata = json.loads(metadata_str)
+                source_file = metadata.get("source_file", "unknown")
+                files_map[source_file] += 1
+
+        output = [
+            f"📚 **Memory Contents** ({len(files_map)} files, {len(keys)} chunks)\n"
+        ]
+        for source_file, count in sorted(files_map.items()):
+            output.append(f"📄 {source_file} ({count} chunks)")
+
+        return "\n".join(output)
+    except Exception as e:
+        return f"Error listing memory contents: {str(e)}"
 
 
 def main():

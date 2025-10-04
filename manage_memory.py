@@ -13,8 +13,9 @@ from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 from collections import defaultdict
 
 # Constants (must match vector_memory.py)
-REDIS_URL = "redis://localhost:6379"
-INDEX_NAME = "doc_chunks"
+import os
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+INDEX_NAME = "mcp_vector_memory"
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 

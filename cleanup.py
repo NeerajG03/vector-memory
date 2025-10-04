@@ -7,11 +7,12 @@ For advanced management, use manage_memory.py
 """
 
 import sys
+import os
 import redis
 
 # Constants
-REDIS_URL = "redis://localhost:6379"
-INDEX_NAME = "doc_chunks"
+REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+INDEX_NAME = "mcp_vector_memory"
 
 
 def cleanup_all():

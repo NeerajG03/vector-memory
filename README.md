@@ -4,21 +4,17 @@
 
 An MCP server that gives AI assistants the ability to save and recall information from files. Works like a long-term memory system where you can store documents and retrieve relevant information later using natural language.
 
+**📖 [Complete Usage Guide](USAGE.md)** | **🔗 [PyPI Package](https://pypi.org/project/mcp-server-vector-memory/)** | **🌐 [MCP Registry](https://mcp.run/server/io.github.NeerajG03/vector-memory)**
+
 ## Features
 
-This server exposes two main tools:
-
-1. **`save_to_memory`** - Save files to memory for later retrieval
-
-   - Supports PDF, TXT, and MD files
-   - Accepts both absolute and relative file paths (converts all to absolute)
-   - Automatically processes and organizes content for efficient recall
-   - Preserves source file information
-
-2. **`recall_from_memory`** - Recall information from memory
-   - Find relevant content using natural language queries
-   - Returns the most relevant information even without exact word matches
-   - Shows absolute paths to source files for each result
+- 🧠 **Semantic Memory**: Save and recall file contents using natural language
+- 📄 **Multi-Format Support**: PDF, TXT, and Markdown files
+- 🔄 **Auto-Update**: Re-saving a file automatically removes old versions
+- 🎯 **Smart Chunking**: Optimizes chunk size based on file type
+- 🔍 **Semantic Search**: Find information even without exact word matches
+- 🗂️ **Memory Management**: Built-in tools to list, search, and clean up memory
+- 🔒 **Data Isolation**: Separate Redis databases and namespaces
 
 ## Prerequisites
 
@@ -37,121 +33,90 @@ brew install redis
 brew services start redis
 ```
 
-## Installation
+## Quick Start
 
-The dependencies are already configured in `pyproject.toml`. Install them using:
+### Installation
 
 ```bash
+# Via pip
+pip install mcp-server-vector-memory
+
+# Via uvx (isolated environment)
+uvx mcp-server-vector-memory
+
+# From source
+git clone https://github.com/NeerajG03/vector-memory.git
+cd vector-memory
 uv sync
 ```
 
-### Verify Your Setup
+### Basic Usage
 
-Before running the server, test your configuration:
-
+**After pip install:**
 ```bash
-uv run test_connection.py
+# Run the server
+mcp-server-vector-memory
+
+# Manage memory
+vector-memory-manage list
+vector-memory-cleanup stats
 ```
 
-This will verify:
-
-- ✅ All required packages are installed
-- ✅ Redis is running and accessible
-- ✅ Embedding model loads correctly
-
-## Usage
-
-### Running the Server Standalone
-
-You can test the server directly:
-
+**From source:**
 ```bash
 uv run vector_memory.py
+uv run manage_memory.py list
+uv run cleanup.py stats
 ```
 
-### Integrating with Claude or Windsurf
+### Integration with AI Clients
 
-Add this configuration to your MCP config file at:
-
-- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-
+**Claude Desktop** (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
     "vector-memory": {
-      "command": "uv",
-      "args": [
-        "--directory",
-        "/ABSOLUTE/PATH/TO/mcp-servers/servers/vector-memory",
-        "run",
-        "vector_memory.py"
-      ]
+      "command": "uvx",
+      "args": ["mcp-server-vector-memory"]
     }
   }
 }
 ```
 
-**Important**: Replace `/ABSOLUTE/PATH/TO` with the full path to your project directory.
-
-After updating the config, restart Claude for Desktop or Windsurf.
-
-### Integrating with Codex CLI
-
-For Codex CLI, add this to your MCP configuration file (typically `~/.config/codex/mcp_config.toml` or similar):
-
+**Codex CLI** (`~/.config/codex/mcp_config.toml`):
 ```toml
 [servers.vector-memory]
-command = "uv"
-args = [
-  "--directory",
-  "/ABSOLUTE/PATH/TO/mcp-servers/servers/vector-memory",
-  "run",
-  "vector_memory.py"
-]
+command = "uvx"
+args = ["mcp-server-vector-memory"]
 ```
 
-**Important**: Replace `/ABSOLUTE/PATH/TO` with the full path to your project directory.
-
-After updating the config, restart or reload Codex CLI.
-
-## Tool Examples
-
-### Saving to Memory
-
-In Claude/Windsurf/Codex, you can ask:
-
-```
-Save these files to memory:
-- /path/to/document1.pdf
-- /path/to/notes.md
-```
-
-or simply:
-
-```
-Remember the contents of /path/to/my-notes.txt
-```
-
-### Recalling from Memory
-
-```
-What do you remember about machine learning algorithms?
-```
-
-or:
-
-```
-Recall information about project deadlines
-```
+See **[USAGE.md](USAGE.md)** for complete integration examples and advanced configuration.
 
 ## Configuration
 
-You can customize the following constants in `vector_memory.py`:
+You can customize the server using environment variables or by editing `vector_memory.py`:
 
-- `REDIS_URL`: Redis connection string (default: `redis://localhost:6379`)
-- `INDEX_NAME`: Vector store index name (default: `doc_chunks`)
+### Environment Variables
+
+- `REDIS_URL`: Redis connection string (default: `redis://localhost:6379/0`)
+  - Format: `redis://host:port/db_number`
+  - Example: `redis://localhost:6379/1` (use database 1)
+
+### Constants in Code
+
+- `INDEX_NAME`: Vector store index name (default: `mcp_vector_memory`)
+  - All keys are prefixed with this namespace to avoid conflicts
 - `MODEL_NAME`: Embedding model (default: `sentence-transformers/all-MiniLM-L6-v2`)
+
+### Data Isolation
+
+The server uses multiple layers of isolation:
+
+1. **Database number**: Uses Redis DB 0 by default (configurable via URL)
+2. **Index namespace**: All keys prefixed with `mcp_vector_memory:*`
+3. **Metadata tagging**: Each document tagged with source file path
+
+This ensures your vector memory data won't conflict with other Redis applications.
 
 ## Architecture
 
@@ -173,44 +138,12 @@ You can customize the following constants in `vector_memory.py`:
 
 ## Memory Management
 
-Two scripts are provided to manage stored documents:
+Two management tools are included:
 
-### Quick Cleanup (`cleanup.py`)
+- **`vector-memory-manage`** - Interactive tool with search and selective deletion
+- **`vector-memory-cleanup`** - Quick cleanup commands
 
-Simple commands for common operations:
-
-```bash
-# Show memory statistics
-uv run cleanup.py stats
-
-# Delete all documents from memory
-uv run cleanup.py all
-
-# Delete documents from a specific file
-uv run cleanup.py file /path/to/file.pdf
-```
-
-### Advanced Management (`manage_memory.py`)
-
-Interactive tool with search and selective deletion:
-
-```bash
-# Interactive mode
-uv run manage_memory.py
-
-# Command-line usage
-uv run manage_memory.py list                    # List all files
-uv run manage_memory.py search <term>           # Search by filename
-uv run manage_memory.py delete-file <path>      # Delete specific file
-uv run manage_memory.py delete-all              # Delete everything
-```
-
-**Interactive Mode Features:**
-
-- 📋 List all documents grouped by source file
-- 🔍 Search documents by filename or path
-- 🗑️ Selectively delete documents with confirmation
-- 📊 See chunk counts per file
+See **[USAGE.md](USAGE.md#memory-management)** for complete documentation and examples.
 
 ## Development
 
