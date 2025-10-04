@@ -14,6 +14,7 @@ from collections import defaultdict
 
 # Constants (must match vector_memory.py)
 import os
+
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 INDEX_NAME = "mcp_vector_memory"
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
@@ -51,20 +52,21 @@ def list_all_documents():
         files_map = defaultdict(list)
 
         for key in keys:
-            key_str = key.decode('utf-8')
+            key_str = key.decode("utf-8")
             # Get the document metadata
             doc_data = redis_client.hgetall(key)
-            
+
             # Try to get source_file from direct key first (faster)
-            if b'source_file' in doc_data:
-                source_file = doc_data[b'source_file'].decode('utf-8')
+            if b"source_file" in doc_data:
+                source_file = doc_data[b"source_file"].decode("utf-8")
                 files_map[source_file].append(key_str)
             # Fallback to parsing _metadata_json
-            elif b'_metadata_json' in doc_data:
-                metadata_str = doc_data[b'_metadata_json'].decode('utf-8')
+            elif b"_metadata_json" in doc_data:
+                metadata_str = doc_data[b"_metadata_json"].decode("utf-8")
                 import json
+
                 metadata = json.loads(metadata_str)
-                source_file = metadata.get('source_file', 'unknown')
+                source_file = metadata.get("source_file", "unknown")
                 files_map[source_file].append(key_str)
 
         print("\n" + "=" * 80)
@@ -98,24 +100,25 @@ def search_by_filename(search_term):
         if not keys:
             print("📭 Memory is empty - no documents found.")
             return []
-        
+
         matching_files = defaultdict(list)
 
         for key in keys:
-            key_str = key.decode('utf-8')
+            key_str = key.decode("utf-8")
             doc_data = redis_client.hgetall(key)
-            
+
             source_file = None
             # Try to get source_file from direct key first
-            if b'source_file' in doc_data:
-                source_file = doc_data[b'source_file'].decode('utf-8')
+            if b"source_file" in doc_data:
+                source_file = doc_data[b"source_file"].decode("utf-8")
             # Fallback to parsing _metadata_json
-            elif b'_metadata_json' in doc_data:
-                metadata_str = doc_data[b'_metadata_json'].decode('utf-8')
+            elif b"_metadata_json" in doc_data:
+                metadata_str = doc_data[b"_metadata_json"].decode("utf-8")
                 import json
+
                 metadata = json.loads(metadata_str)
-                source_file = metadata.get('source_file', 'unknown')
-            
+                source_file = metadata.get("source_file", "unknown")
+
             # Check if search term matches
             if source_file and search_term.lower() in source_file.lower():
                 matching_files[source_file].append(key_str)
@@ -123,7 +126,7 @@ def search_by_filename(search_term):
         if not matching_files:
             print(f"\n🔍 No files found matching: '{search_term}'")
             return []
-        
+
         print("\n" + "=" * 80)
         print(f"🔍 SEARCH RESULTS for: '{search_term}'")
         print("=" * 80)
@@ -153,18 +156,19 @@ def delete_by_file(file_path, confirm=True):
         for key in keys:
             key_str = key.decode("utf-8")
             doc_data = redis_client.hgetall(key)
-            
+
             source_file = None
             # Try to get source_file from direct key first
-            if b'source_file' in doc_data:
-                source_file = doc_data[b'source_file'].decode('utf-8')
+            if b"source_file" in doc_data:
+                source_file = doc_data[b"source_file"].decode("utf-8")
             # Fallback to parsing _metadata_json
-            elif b'_metadata_json' in doc_data:
-                metadata_str = doc_data[b'_metadata_json'].decode('utf-8')
+            elif b"_metadata_json" in doc_data:
+                metadata_str = doc_data[b"_metadata_json"].decode("utf-8")
                 import json
+
                 metadata = json.loads(metadata_str)
-                source_file = metadata.get('source_file', '')
-            
+                source_file = metadata.get("source_file", "")
+
             if source_file == file_path:
                 keys_to_delete.append(key)
 
