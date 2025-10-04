@@ -1,4 +1,6 @@
 import os
+import sys
+import warnings
 from typing import Any
 from mcp.server.fastmcp import FastMCP
 from langchain_redis import RedisVectorStore
@@ -6,6 +8,11 @@ from langchain.schema import Document
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
+
+# Suppress warnings and redirect logging to stderr
+warnings.filterwarnings('ignore')
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TRANSFORMERS_VERBOSITY'] = 'error'
 
 # Initialize FastMCP server
 mcp = FastMCP("vector-memory")
