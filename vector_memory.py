@@ -10,9 +10,9 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
 
 # Suppress warnings and redirect logging to stderr
-warnings.filterwarnings('ignore')
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-os.environ['TRANSFORMERS_VERBOSITY'] = 'error'
+warnings.filterwarnings("ignore")
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 
 # Initialize FastMCP server
 mcp = FastMCP("vector-memory")
@@ -47,11 +47,44 @@ async def save_to_memory(
     Returns:
         Confirmation message
     """
+    import redis
+    import json
+    
     docs = []
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size, chunk_overlap=chunk_overlap
     )
+    
+    # First, remove any existing documents from these file paths to avoid duplicates
+    redis_client = redis.Redis.from_url(REDIS_URL)
+    for file_path in file_paths:
+        abs_path = os.path.abspath(file_path)
+        
+        try:
+            pattern = f"{INDEX_NAME}:*"
+            keys = redis_client.keys(pattern)
+            keys_to_delete = []
+            
+            for key in keys:
+                doc_data = redis_client.hgetall(key)
+                # Check both possible metadata storage formats
+                if b'source_file' in doc_data:
+                    stored_path = doc_data[b'source_file'].decode('utf-8')
+                    if stored_path == abs_path:
+                        keys_to_delete.append(key)
+                elif b'_metadata_json' in doc_data:
+                    metadata_str = doc_data[b'_metadata_json'].decode('utf-8')
+                    metadata = json.loads(metadata_str)
+                    if metadata.get('source_file') == abs_path:
+                        keys_to_delete.append(key)
+            
+            if keys_to_delete:
+                redis_client.delete(*keys_to_delete)
+        except Exception:
+            # Continue even if deletion fails
+            pass
 
+    # Now process and add the new documents
     for file_path in file_paths:
         # Convert to absolute path
         abs_path = os.path.abspath(file_path)
