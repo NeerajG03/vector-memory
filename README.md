@@ -1,6 +1,6 @@
 # Vector Memory MCP Server
 
-<!-- mcp-name: io.github.neerajg03/vector-memory -->
+<!-- mcp-name: io.github.NeerajG03/vector-memory -->
 
 An MCP server that gives AI assistants the ability to save and recall information from files. Works like a long-term memory system where you can store documents and retrieve relevant information later using natural language.
 

@@ -1,6 +1,6 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
-  "name": "io.github.neerajg03/vector-memory",
+  "name": "io.github.NeerajG03/vector-memory",
   "description": "Semantic document memory using Redis vector store. Save and recall files with natural language.",
   "version": "0.1.0",
   "homepage": "https://github.com/NeerajG03/vector-memory",
