@@ -123,18 +123,6 @@ Retrieve relevant information using natural language.
 - `what_to_remember`: What you're trying to recall
 - `how_many_results`: Number of results to return (default: 3)
 
-### 3. `list_memory_contents` - See What's Stored
-
-List all files currently in memory.
-
-**Examples:**
-
-```
-"What files are in memory?"
-"Show me what you remember"
-"List memory contents"
-```
-
 ## Memory Management
 
 ### Quick Cleanup Commands

@@ -71,7 +71,7 @@ FastMCP Server (vector_memory.py)
 
 ```
 vector-memory/
-├── vector_memory.py          # Main MCP server (3 tools)
+├── vector_memory.py          # Main MCP server (2 tools)
 ├── manage_memory.py          # Interactive management CLI
 ├── cleanup.py                # Quick cleanup CLI
 ├── main.py                   # Entry point (if needed)
@@ -142,15 +142,6 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
   2. Get top K results
   3. Format with source file and content
 - **Returns**: Formatted results with source attribution
-
-**`list_memory_contents() -> str`**
-
-- **Purpose**: Show what's currently in memory
-- **Process**:
-  1. Get all keys from Redis
-  2. Group by source_file
-  3. Count chunks per file
-- **Returns**: Formatted list with file counts
 
 ### 2. manage_memory.py
 
@@ -266,6 +257,29 @@ MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 - MCP protocol requires clean stdout (JSON only)
 - Prevents parsing errors in clients
 - Improves user experience
+
+### 7. Background Initialization
+
+**Decision**: Use background initialization for embeddings model and vector store.
+
+**Implementation**: Model loading begins automatically in the background after server startup using asyncio tasks.
+
+**Rationale**:
+
+- **Instant startup**: Server starts in <1 second
+- **No first-call delay**: Model loads in background while server is idle
+- **Better UX**: MCP client connects immediately, tools are ready to use without delays
+- **Efficient resources**: Model (~80MB + PyTorch overhead) loads asynchronously using thread pool
+- **Self-healing**: If background init hasn't started, first tool call triggers it automatically
+
+**How it works**: 
+1. Server starts using `run_stdio_async()` with async main function
+2. Background async task starts loading the model in a thread pool immediately
+3. Server responds to MCP client instantly (doesn't wait for model loading)
+4. First tool call waits for background loading to complete (if still loading)
+5. Subsequent calls use the cached instance with no delay
+
+**Result**: By the time the client connects and the user makes their first request, the model is often already loaded or nearly finished loading.
 
 ## Development Guidelines
 
