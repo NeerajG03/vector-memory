@@ -309,6 +309,51 @@ NEW_VAR = os.environ.get("NEW_VAR", "default_value")
 
 ## Testing Strategy
 
+### Local Testing Without Publishing
+
+#### Quick Tests
+
+```bash
+# Syntax check
+uv run python -c "import vector_memory; print('✅ OK')"
+
+# Build test
+uv build
+```
+
+#### MCP Inspector (Recommended)
+
+```bash
+npm install -g @modelcontextprotocol/inspector
+npx @modelcontextprotocol/inspector uv run vector_memory.py
+```
+
+#### Claude Desktop Dev Config
+
+```json
+{
+  "mcpServers": {
+    "vector-memory-dev": {
+      "command": "/absolute/path/to/uv",
+      "args": ["--directory", "/path/to/vector-memory", "run", "vector_memory.py"],
+      "env": {
+        "UV_LINK_MODE": "copy",
+        "UV_NO_PROGRESS": "1",
+        "PYTHONUNBUFFERED": "1"
+      }
+    }
+  }
+}
+```
+
+Find uv path: `which uv`. Restart Claude Desktop after config changes.
+
+#### Editable Install
+
+```bash
+pip install -e /path/to/vector-memory
+```
+
 ### Manual Testing
 
 1. **Connection Test**:
@@ -344,6 +389,41 @@ uv run vector_memory.py
 
 # In another terminal, test with MCP inspector or client
 ```
+
+### Common Local Testing Issues
+
+#### Issue: `spawn uv ENOENT`
+**Cause**: Claude Desktop can't find the `uv` command in its PATH.
+
+**Solution**: Use absolute path to `uv`:
+```bash
+which uv
+# Use the output (e.g., /Users/username/.pyenv/shims/uv) in config
+```
+
+#### Issue: `Unexpected non-whitespace character after JSON`
+**Cause**: Something is writing non-JSON to stdout, breaking MCP protocol.
+
+**Solutions**:
+1. Add environment variables to suppress UV output:
+   ```json
+   "env": {
+     "UV_LINK_MODE": "copy",
+     "UV_NO_PROGRESS": "1",
+     "PYTHONUNBUFFERED": "1"
+   }
+   ```
+
+2. Ensure logging goes to stderr (already configured in code)
+
+3. Check for any `print()` statements or warnings going to stdout
+
+#### Issue: Server connects but first tool call is slow
+**Cause**: Model loads on first call (background initialization).
+
+**Expected**: First call takes 10-15 seconds, subsequent calls are instant.
+
+**Verify**: Check that `_initialize_vector_store()` is using `run_in_executor()` for background loading.
 
 ### Test Scenarios
 

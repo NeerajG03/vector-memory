@@ -103,6 +103,7 @@ Save files to memory for later recall.
 ```
 
 **What it does:**
+
 - Automatically removes old versions of the same file
 - Optimizes chunk size based on file type (PDF, Markdown, Text)
 - Stores absolute paths for reliable recall
@@ -120,6 +121,7 @@ Retrieve relevant information using natural language.
 ```
 
 **Parameters:**
+
 - `what_to_remember`: What you're trying to recall
 - `how_many_results`: Number of results to return (default: 3)
 
@@ -174,6 +176,7 @@ uv run manage_memory.py delete-all
 ```
 
 **Interactive Mode Features:**
+
 - 📋 List all documents grouped by source file
 - 🔍 Search documents by filename or path
 - 🗑️ Selectively delete documents with confirmation
@@ -276,7 +279,7 @@ vector-memory-manage list
 
 # Output:
 # 📚 Memory Contents (3 files, 45 chunks)
-# 
+#
 # 📄 /Users/me/project/notes.md (15 chunks)
 # 📄 /Users/me/project/README.md (12 chunks)
 # 📄 /Users/me/research/paper1.pdf (18 chunks)
@@ -334,7 +337,7 @@ Make sure you're using the same Redis database. Check your `REDIS_URL` environme
 # Project A - use database 0
 REDIS_URL=redis://localhost:6379/0 mcp-server-vector-memory
 
-# Project B - use database 1  
+# Project B - use database 1
 REDIS_URL=redis://localhost:6379/1 mcp-server-vector-memory
 ```
 

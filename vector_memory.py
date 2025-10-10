@@ -14,6 +14,12 @@ from langchain_community.document_loaders import TextLoader, PyPDFLoader
 warnings.filterwarnings("ignore")
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["TRANSFORMERS_VERBOSITY"] = "error"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+# Redirect any stdout pollution from dependencies to stderr
+import logging
+
+logging.basicConfig(stream=sys.stderr, level=logging.ERROR)
 
 # Initialize FastMCP server
 mcp = FastMCP("vector-memory")
@@ -241,17 +247,10 @@ async def recall_from_memory(what_to_remember: str, how_many_results: int = 3) -
         return f"Error recalling from memory: {str(e)}"
 
 
-async def main():
-    """Run the MCP server with background initialization."""
-    global _init_task
-
-    # Start background initialization immediately
-    if _init_task is None:
-        _init_task = asyncio.create_task(_initialize_vector_store())
-
-    # Run the server
-    await mcp.run_stdio_async()
+def main():
+    """Run the MCP server."""
+    mcp.run(transport="stdio")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
