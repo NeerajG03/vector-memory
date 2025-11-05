@@ -81,6 +81,7 @@ jobs:
             .assets[]
             | select(.name | test("(?i)" + $os))
             | select(.name | test("(?i)" + $arch_regex))
+            | select(.name | endswith(".tar.gz"))
             | .browser_download_url
           ' | head -n 1)
 
