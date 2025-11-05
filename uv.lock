@@ -717,12 +717,13 @@ cli = [
 
 [[package]]
 name = "mcp-server-vector-memory"
-version = "0.3.0"
+version = "0.4.0"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },
     { name = "langchain-community" },
     { name = "langchain-huggingface" },
+    { name = "langchain-text-splitters" },
     { name = "langchain-redis" },
     { name = "mcp", extra = ["cli"] },
     { name = "pypdf" },
@@ -735,6 +736,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "langchain-community", specifier = ">=0.3.30" },
     { name = "langchain-huggingface", specifier = ">=0.3.1" },
+    { name = "langchain-text-splitters", specifier = ">=0.3.11" },
     { name = "langchain-redis", specifier = ">=0.2.4" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.16.0" },
     { name = "pypdf", specifier = ">=6.1.1" },

@@ -1,6 +1,6 @@
 [project]
 name = "mcp-server-vector-memory"
-version = "0.3.1"
+version = "0.4.0"
 description = "MCP server for semantic document memory with Redis vector store"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -19,6 +19,7 @@ dependencies = [
     "httpx>=0.28.1",
     "langchain-community>=0.3.30",
     "langchain-huggingface>=0.3.1",
+    "langchain-text-splitters>=0.3.11",
     "langchain-redis>=0.2.4",
     "mcp[cli]>=1.16.0",
     "pypdf>=6.1.1",

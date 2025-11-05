@@ -108,7 +108,29 @@ Save files to memory for later recall.
 - Optimizes chunk size based on file type (PDF, Markdown, Text)
 - Stores absolute paths for reliable recall
 
-### 2. `recall_from_memory` - Recall Information
+### 2. `save_text_to_memory` - Remember Free Text
+
+Store ad-hoc notes or generated text without creating a file.
+
+**Examples:**
+
+```
+"Save this to memory: Meeting notes about the Q2 roadmap..."
+"Remember this summary for later use"
+```
+
+**Parameters:**
+
+- `content`: The text you want to store
+- `description` (optional): Friendly name used for recall attribution
+
+**What it does:**
+
+- Splits long text into semantic chunks using recursive splitting
+- Tags entries with a synthetic source so they appear in recall results
+- Works alongside file-backed memories without extra configuration
+
+### 3. `recall_from_memory` - Recall Information
 
 Retrieve relevant information using natural language.
 

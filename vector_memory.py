@@ -2,12 +2,14 @@ import os
 import sys
 import warnings
 import asyncio
+import uuid
 from typing import Any
 from mcp.server.fastmcp import FastMCP
 from langchain_redis import RedisVectorStore
 from langchain.schema import Document
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import MarkdownTextSplitter
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
 
 # Suppress warnings and redirect logging to stderr
@@ -176,18 +178,26 @@ async def save_to_memory(file_paths: list[str]) -> str:
 
         ext = os.path.splitext(abs_path)[1].lower()
 
-        # Get optimal chunk size for this file type
-        chunk_size, chunk_overlap = _get_optimal_chunk_size(ext)
-        splitter = RecursiveCharacterTextSplitter(
-            chunk_size=chunk_size, chunk_overlap=chunk_overlap
-        )
-
         # Load document depending on type
         try:
             if ext == ".pdf":
                 loader = PyPDFLoader(abs_path)
+                chunk_size, chunk_overlap = _get_optimal_chunk_size(ext)
+                splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=chunk_size, chunk_overlap=chunk_overlap
+                )
+            elif ext == ".md":
+                loader = TextLoader(abs_path, encoding="utf-8")
+                chunk_size, chunk_overlap = _get_optimal_chunk_size(ext)
+                splitter = MarkdownTextSplitter(
+                    chunk_size=chunk_size, chunk_overlap=chunk_overlap
+                )
             else:  # fallback to text
                 loader = TextLoader(abs_path, encoding="utf-8")
+                chunk_size, chunk_overlap = _get_optimal_chunk_size(ext)
+                splitter = RecursiveCharacterTextSplitter(
+                    chunk_size=chunk_size, chunk_overlap=chunk_overlap
+                )
 
             file_docs = loader.load()
 
@@ -209,6 +219,62 @@ async def save_to_memory(file_paths: list[str]) -> str:
         return f"✅ Successfully saved {len(file_paths)} file(s) to memory. Content is now available for recall."
     except Exception as e:
         return f"Error saving to memory: {str(e)}"
+
+
+@mcp.tool()
+async def save_text_to_memory(content: str, description: str | None = None) -> str:
+    """
+    Remember free-form text without requiring a file.
+
+    This is useful when you have ad-hoc notes or generated text that should be
+    recalled later but is not stored on disk.
+
+    Args:
+        content: The text to store in memory.
+        description: Optional label used for metadata and recall context.
+
+    Returns:
+        Confirmation message describing the stored memory
+    """
+    text = content.strip()
+    if not text:
+        return "Error: No content provided to store."
+
+    chunk_size, chunk_overlap = _get_optimal_chunk_size(".txt")
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size, chunk_overlap=chunk_overlap
+    )
+    chunks = splitter.split_text(text)
+
+    if not chunks:
+        return "Error: Unable to process the provided content."
+
+    label = description.strip() if description else None
+    source_id = label or str(uuid.uuid4())
+    source_key = f"free-text:{source_id}"
+
+    docs = [
+        Document(
+            page_content=chunk,
+            metadata={
+                "source_file": source_key,
+                "source_label": label or "free_text",
+                "input_type": "free_text",
+                "chunk_index": idx,
+            },
+        )
+        for idx, chunk in enumerate(chunks)
+    ]
+
+    try:
+        vector_store = await _get_vector_store()
+        vector_store.add_documents(docs)
+        return (
+            f"✅ Saved free text to memory with label '{source_key}'. "
+            f"Stored {len(docs)} chunk(s)."
+        )
+    except Exception as e:
+        return f"Error saving free text to memory: {str(e)}"
 
 
 @mcp.tool()

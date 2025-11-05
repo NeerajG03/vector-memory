@@ -2,14 +2,15 @@
 
 <!-- mcp-name: io.github.NeerajG03/vector-memory -->
 
-An MCP server that gives AI assistants the ability to save and recall information from files. Works like a long-term memory system where you can store documents and retrieve relevant information later using natural language.
+An MCP server that gives AI assistants the ability to save and recall information from files or free-form notes. Works like a long-term memory system where you can store documents and retrieve relevant information later using natural language.
 
 **📖 [Complete Usage Guide](USAGE.md)** | **🔗 [PyPI Package](https://pypi.org/project/mcp-server-vector-memory/)** | **🌐 [MCP Registry](https://mcp.run/server/io.github.NeerajG03/vector-memory)**
 
 ## Features
 
-- 🧠 **Semantic Memory**: Save and recall file contents using natural language
+- 🧠 **Semantic Memory**: Save and recall text using natural language
 - 📄 **Multi-Format Support**: PDF, TXT, and Markdown files
+- ✍️ **Free-Form Notes**: Store ad-hoc text snippets without creating files
 - 🔄 **Auto-Update**: Re-saving a file automatically removes old versions
 - 🎯 **Smart Chunking**: Optimizes chunk size based on file type
 - 🔍 **Semantic Search**: Find information even without exact word matches
