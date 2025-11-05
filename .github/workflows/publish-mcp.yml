@@ -67,14 +67,22 @@ jobs:
 
       - name: Install MCP Publisher
         run: |
-          # Get the latest release tag and version
-          LATEST_TAG=$(curl -s https://api.github.com/repos/modelcontextprotocol/registry/releases/latest | grep "tag_name" | cut -d '"' -f 4)
-          VERSION=${LATEST_TAG#v}  # Remove 'v' prefix
+          set -euo pipefail
+          RELEASE_JSON=$(curl -s https://api.github.com/repos/modelcontextprotocol/registry/releases/latest)
           OS=$(uname -s | tr '[:upper:]' '[:lower:]')
           ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
-          
-          # Download and extract (filename uses version without 'v')
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/download/${LATEST_TAG}/mcp-publisher_${VERSION}_${OS}_${ARCH}.tar.gz" | tar xz
+          SUFFIX="${OS}_${ARCH}"
+
+          ASSET_URL=$(echo "$RELEASE_JSON" | jq -r --arg suffix "$SUFFIX" '
+            .assets[] | select(.name | test("^mcp-publisher_.*_" + $suffix + "\\.tar\\.gz$")) | .browser_download_url
+          ' | head -n 1)
+
+          if [ -z "$ASSET_URL" ] || [ "$ASSET_URL" = "null" ]; then
+            echo "Unable to find mcp-publisher asset for ${SUFFIX}" >&2
+            exit 1
+          fi
+
+          curl -Ls "$ASSET_URL" | tar xz
           chmod +x mcp-publisher
 
       - name: Login to MCP Registry
