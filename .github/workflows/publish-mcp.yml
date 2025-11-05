@@ -70,7 +70,12 @@ jobs:
           set -euo pipefail
           RELEASE_JSON=$(curl -s https://api.github.com/repos/modelcontextprotocol/registry/releases/latest)
           OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-          ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+          RAW_ARCH=$(uname -m | tr '[:upper:]' '[:lower:]')
+          case "$RAW_ARCH" in
+            x86_64) ARCH="x86_64" ;;
+            aarch64|arm64) ARCH="arm64" ;;
+            *) ARCH="$RAW_ARCH" ;;
+          esac
           SUFFIX="${OS}_${ARCH}"
 
           ASSET_URL=$(echo "$RELEASE_JSON" | jq -r --arg suffix "$SUFFIX" '
